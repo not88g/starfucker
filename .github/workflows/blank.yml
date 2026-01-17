@@ -1,0 +1,31 @@
+name: Build APT Repo
+
+on:
+  push:
+    paths:
+      - "debs/*.deb"
+      - ".github/workflows/build-repo.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Install dpkg tools
+      run: sudo apt-get update && sudo apt-get install -y dpkg-dev gzip
+
+    - name: Generate Packages
+      run: |
+        dpkg-scanpackages debs /dev/null > Packages
+        gzip -kf Packages
+
+    - name: Commit changes
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add Packages Packages.gz
+        git commit -m "Auto-update Packages" || exit 0
+        git push
