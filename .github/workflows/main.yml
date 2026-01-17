@@ -1,0 +1,30 @@
+name: Build Cydia Repo
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'debs/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dpkg
+      run: sudo apt-get update && sudo apt-get install -y dpkg-dev bzip2
+    
+    - name: Build Packages file
+      run: |
+        dpkg-scanpackages -m debs /dev/null > Packages
+        bzip2 -fks Packages
+    
+    - name: Commit and push if changed
+      run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
+        git add Packages Packages.bz2
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update repo index" && git push)
